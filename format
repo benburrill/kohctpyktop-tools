@@ -1,0 +1,63 @@
+The saves the game gives you are base64 encoded, zlib compressed data
+that is broken up into a number of sections.
+
+The sections seem to be separated by the bytes [TAB] [7] 01, IDK what
+the significance of that is.
+
+Apart from the header, all other sections are grid layers, which are
+lists of columns, where all columns start with the bytes [TAB] [Y] 01,
+again I have no idea why.  Columns are made up of cells, which are
+usually 1 byte long, but sometimes take up 2 bytes for mysterious
+reasons.  See below.
+
+Header:
+
+    This section is 4 bytes long and just holds the dimensions of the
+    grid.
+
+    Byte 1: 04? Left sideline width maybe????
+    Byte 2: Width, including sidelines
+    Byte 3: 04? Right sideline width maybe???
+    Byte 4: Height
+
+Layer 1: silicon
+
+    In this layer, the cells are all two bytes wide for some reason.  As
+    far as I can tell the first byte in a cell is always 04 and is never
+    used.
+
+    Second byte: 00 (no silicon), 01 (N-type), 02 (P-type)
+
+Layer 2: metal
+
+    Cells (usually) 1 byte long: 02 (no metal), 03 (metal)
+
+    This layer is a bit weird though because when there are vias, cells
+    expand to 2 bytes long, and I think are always 04 00
+
+Layer 3: vertical gates
+
+    Cells 1 byte long: 02 (no gate), 03 (gate)
+
+Layer 4: horizontal gates
+
+    Same as layer 3, just when gates are oriented horizontally
+
+Layer 5: via layer
+
+    Cells 1 byte long: 02 (no via), 03 (via)
+
+Layer 6: horizontal silicon connections
+
+    Cells 1 byte long: 02 (no connection), 03 (connection between this
+    cell and the one on the right)
+
+Layer 7: vertical silicon connections
+
+    Same as Layer 6, just vertical.  Connection between this cell and
+    the one below it.
+
+Layer 8: horizontal metal connections
+Layer 9: vertical metal connections
+
+    Yeah same idea again, just for metal this time
