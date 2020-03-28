@@ -1,9 +1,5 @@
-# Bytecode caches
-**/__pycache__/
-**/*.pyc
-
-# Packaging and venvs
-**/*.egg-info/
-/dist/
-/build/
-/.venv/
+/.idea/**/workspace.xml
+/.idea/**/usage.statistics.xml
+/.idea/**/tasks.xml
+/.idea/**/shelf/
+/out/

@@ -1,5 +1,9 @@
 # Kohctpyktop tools
 
+Switching to Java, below is for Python...
+
+---
+
 Currently pretty minimal
 
 What I've found out about the format I've written in the file `format`.
