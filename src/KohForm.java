@@ -5,17 +5,18 @@ public class KohForm {
     public static void main(String[] args) throws IOException {
         System.out.println("KohForm");
 
-        System.out.println("Searching for gate...");
-
-
         if (args.length == 1) {
             System.out.println("Got argument " + args[0]);
 
             var save = KohSave.fromString(Files.readString(Paths.get(args[0])));
             // save.printLayers(false);
+
+            System.out.println("Searching for gate...");
             Wire result = findGate(save);
             if (result == null) System.out.println("Didn't find anything");
             else System.out.println("Gate at " + result);
+        } else {
+            System.out.println("Wrong number of arguments!");
         }
     }
 
