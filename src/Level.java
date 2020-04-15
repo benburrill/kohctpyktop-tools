@@ -41,6 +41,10 @@ public class Level {
         }
     }
 
+    public IOPad getPin(int pin) {
+        return pinMap[pin];
+    }
+
     // Yeah I'm really starting to think I'm overengineering things...
     public IOPad[] getInputs(boolean includeVCC) {
         int start = includeVCC? 1 : 0;
@@ -139,7 +143,7 @@ public class Level {
         }
     }
 
-    public Level getLevel(int level) {
+    public static Level getLevel(int level) {
         return getLevel(Paths.get(Level.class.getResource(
             "levels/level" + level + ".pins"
         ).getFile()));

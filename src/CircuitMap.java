@@ -6,13 +6,16 @@ public class CircuitMap<T> {
     private T[][][] map;
 
     public CircuitMap(KohSave save, T initial) {
-        map = (T[][][]) new Object[save.getWidth()][save.getHeight()][2];
+        @SuppressWarnings("unchecked")
+        var arr = (T[][][]) new Object[save.getWidth()][save.getHeight()][2];
         for (int col = 0; col < save.getWidth(); col++) {
             for (int row = 0; row < save.getHeight(); row++) {
-                map[col][row][0] = initial;
-                map[col][row][1] = initial;
+                arr[col][row][0] = initial;
+                arr[col][row][1] = initial;
             }
         }
+
+        this.map = arr;
     }
 
     public void set(Wire wire, T val) {

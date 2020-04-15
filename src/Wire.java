@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 public class Wire {
     private boolean silicon;
     private int col;
@@ -34,6 +36,24 @@ public class Wire {
     }
 
     // TODO: implement equals and hashCode?
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var other = (Wire) obj;
+
+        return (
+            this.silicon == other.silicon &&
+            this.col == other.col &&
+            this.row == other.row
+        );
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(new Object[] {silicon, col, row});
+    }
 
     public enum Directions {
         NORTH(0, -1),

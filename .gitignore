@@ -1,5 +1,8 @@
 /.idea/**/workspace.xml
+/.idea/**/uiDesigner.xml
 /.idea/**/usage.statistics.xml
 /.idea/**/tasks.xml
 /.idea/**/shelf/
-/out/
+/.idea/libraries/
+/target/
+/saves/**/*.png

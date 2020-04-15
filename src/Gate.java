@@ -26,7 +26,8 @@ public enum Gate {
         return passage;
     }
 
-    public boolean isOpen(boolean swch) {
+    // Can current pass?
+    public boolean isPassable(boolean swch) {
         return swch == (this == NPN);
     }
 

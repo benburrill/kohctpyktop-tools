@@ -1,25 +1,61 @@
+import guru.nidi.graphviz.engine.Format;
+
 import java.io.*;
 import java.nio.file.*;
 
 public class KohForm {
+    private KohSave save;
+    private Level level;
+
+    public KohForm(Path path) throws IOException {
+        this.save = KohSave.fromString(Files.readString(path));
+        this.level = Level.getLevel(2);  // TODO
+    }
+
     public static void main(String[] args) throws IOException {
         System.out.println("KohForm");
+
+        byte a = (byte) 255;
+
+        System.out.println(a);
 
         if (args.length == 1) {
             System.out.println("Got argument " + args[0]);
 
-            var save = KohSave.fromString(Files.readString(Paths.get(args[0])));
-            // save.printLayers(false);
+            var kf = new KohForm(Paths.get(args[0]));
 
-            System.out.println("Searching for gate...");
-            Wire result = findGate(save);
-            if (result == null) System.out.println("Didn't find anything");
-            else System.out.println("Gate at " + result);
+            // kf.save.printLayers(false);
+
+            System.out.println("Pins:");
+            var pins = kf.save.getPins();
+            for (int i = 0; i < pins.length; i++) {
+                System.out.println(" " + i + ") " + pins[i]);
+            }
+//            System.out.println("Pins: " + Arrays.deepToString(kf.save.getPins()));
+
+            System.out.println("Creating graph...");
+            var graphviz = WireGraph.fromSave(kf.save).toGraphviz(kf.level);
+            graphviz.render(Format.PNG).toFile(new File(args[0] + ".png"));
+            System.out.println(graphviz.render(Format.DOT).toString());
+//            WireGraph.fromSave(kf.save).prettyPrint(kf.level);
+//            System.out.println(Arrays.deepToString(WireGraph.fromSave(kf.save).getGraph()));
+
+
+//            System.out.println("Searching for gate...");
+//            Wire result = findGate(kf.save);
+//            if (result == null) System.out.println("Didn't find anything");
+//            else System.out.println("Gate at " + result);
         } else {
             System.out.println("Wrong number of arguments!");
         }
     }
 
+
+
+
+
+
+    // old
     private static Wire findGate(KohSave save, Wire src, CircuitMap<Boolean> seen) {
         System.out.println("Searching " + src);
         seen.set(src, true);

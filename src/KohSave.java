@@ -66,14 +66,24 @@ public class KohSave {
     }
 
     public IOPad getPad(Wire wire) {
-        // Note: KohSave currently does not store level, so the pad is nameless.
-        // If it is VCC though probably just return IOPad.VCC though, so it will
-        // get a name.  But otherwise, just return new IOPad(pinNumber)
-        // Returns null if there is no corresponding pad for the wire.
+        if (!wire.isMetal()) return null;
 
-        // TODO: implement it
+        int col = wire.getCol();
+        int row = wire.getRow();
 
-        return null;
+        if (row < 2 || row >= height - 2) return null;
+        if ((row - 2) % 4 == 3) return null;
+        if (col < 1 || col >= width - 1) return null;
+        if (col >= 4 && col < width - 4) return null;
+
+        if (row < 5 || row >= height - 5) return IOPad.VCC;
+        int pin = (row - 2) / 4;
+
+        if (col >= width - 4) pin += (height - 3) / 4 - 2;
+
+        // If Level is ever attached to KohSave, then we could get the proper
+        // name for the pad.  Maybe doesn't matter though.
+        return new IOPad(pin);
     }
 
     public LinkedList<GateSwitch> getGateSwitches(Wire wire) {
@@ -127,9 +137,9 @@ public class KohSave {
         IOPad pad = getPad(src);
         if (pad != null && pad.getPin() == 0) {
             var opts = new Wire[] {
-                new Wire(sil, width - col, height - row),
-                new Wire(sil, width - col, height),
-                new Wire(sil, col, height - row)
+                new Wire(sil, width - col - 1, height - row - 1),
+                new Wire(sil, width - col - 1, row),
+                new Wire(sil, col, height - row - 1)
             };
 
             for (var w : opts) if (checkWire(w)) result.add(w);
@@ -162,18 +172,25 @@ public class KohSave {
     }
 
     public Wire[] getPins() {
-        var perSide = (height - 3) / 4;
-        var result = new Wire[2 * perSide];
+        // Get a wire corresponding to each pin id.  So it only returns a single
+        // VCC pin (the upper left pin) and you can do getPins()[ioPad.getPin()]
+        // to get a pin location for an IOPad.
 
-        for (int i = 0; i < perSide; i++) {
+        var perSide = (height - 3) / 4 - 2;
+        var result = new Wire[2 * perSide + 1];
+
+        result[0] = new Wire(false, 2, 3);
+        for (int i = 1; i <= perSide; i++) {
             int x = 2;
             int y = 3 + 4 * i;
             result[i] = new Wire(false, x, y);
             result[perSide + i] = new Wire(false, width - 1 - x, y);
+        }
 
-            // Might as well check to see if for some reason the pin doesn't
-            // attach to metal.
-            if (!checkWire(result[i]) || !checkWire(result[perSide + i])) {
+        for (var pin : result) {
+            // Might as well check to see if for some reason any of the pins
+            // don't connect to metal.
+            if (!checkWire(pin)) {
                 throw new AssertionError("Broken pin!");
             }
         }
