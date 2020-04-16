@@ -4,10 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <build>
-    	<sourceDirectory>src</sourceDirectory>
-    	<scriptSourceDirectory>src</scriptSourceDirectory>
-    	<testSourceDirectory>test</testSourceDirectory>
-    	
+        <sourceDirectory>${project.basedir}/src</sourceDirectory>
+        <scriptSourceDirectory>${project.basedir}/src</scriptSourceDirectory>
+        <testSourceDirectory>${project.basedir}/src</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -33,7 +37,6 @@
             <artifactId>amf-serializer</artifactId>
             <version>1.5.0</version>
         </dependency>
-
     </dependencies>
 
 </project>

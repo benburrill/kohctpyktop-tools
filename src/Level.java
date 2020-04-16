@@ -1,7 +1,10 @@
-import java.nio.file.*;
-import java.nio.charset.StandardCharsets;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.LinkedList;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 // TODO: lots of bad / duplicate code here, maybe improve?
 //  I didn't want to intially, but one way to maybe improve a few things would
@@ -80,33 +83,10 @@ public class Level {
         return result;
     }
 
-    public Wire[] getWiresFor(IOPad pad) {
-        int pin = pad.getPin();
-        pad = pinMap[pin];
-        if (pad == null) return null; // TODO: decide null or new int[][] {}
+    public static Level getLevel(InputStream stream) {
+        var br = new BufferedReader(new InputStreamReader(stream, UTF_8));
 
-        int[][] tiles;
-        if (pin == 0) {
-            return new Wire[] {
-                // pls just kill me
-            };
-        } else {
-            return new Wire[] {
-                // 9
-            };
-        }
-
-        // perhaps would just be better to do the inverse: get pad for tile
-        // we can then iterate 1 tile per physical pad and start there,
-        // determining whether it is connected to a pad or.... idk.
-
-        // but then we'd want a way to determine if a pad is input or output,
-        // which is something I've designed against :(
-        // so uh... yay...
-    }
-
-    public static Level getLevel(Path path) {
-        try (var br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+        try {
             String line;
             var inputs = new LinkedList<IOPad>();
             var outputs = new LinkedList<IOPad>();
@@ -135,8 +115,8 @@ public class Level {
             }
 
             return new Level(
-                inputs.toArray(new IOPad[inputs.size()]),
-                outputs.toArray(new IOPad[outputs.size()])
+                inputs.toArray(new IOPad[] {}),
+                outputs.toArray(new IOPad[] {})
             );
         } catch(IOException e) {
             throw new IllegalArgumentException(e);
@@ -144,8 +124,11 @@ public class Level {
     }
 
     public static Level getLevel(int level) {
-        return getLevel(Paths.get(Level.class.getResource(
-            "levels/level" + level + ".pins"
-        ).getFile()));
+        String rcName = "levels/level" + level + ".pins";
+        try (var is = Level.class.getResourceAsStream(rcName)) {
+            return getLevel(is);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

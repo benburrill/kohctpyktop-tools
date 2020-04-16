@@ -1,14 +1,21 @@
+import com.exadel.flamingo.flex.messaging.amf.io.AMF3Serializer;
 import guru.nidi.graphviz.attribute.*;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableNode;
 
 import static guru.nidi.graphviz.model.Factory.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.LinkedList;
 
 public class WireGraph {
+    private byte[] pinMap;
+    private Connection[][] connections;
+
     public static class Connection {
         private int to;
         private int swch;
@@ -52,9 +59,6 @@ public class WireGraph {
             );
         }
     }
-
-    private byte[] pinMap;
-    private Connection[][] connections;
 
     public WireGraph(byte[] pinMap, Connection[][] connections) {
         this.pinMap = pinMap;
@@ -255,10 +259,11 @@ public class WireGraph {
                 // Avoid adding connections more than once
                 if (con.to < i) continue;
 
-                var pColor = Color.GOLD;
+                var pColor = Color.GOLDENROD;
                 var nColor = Color.RED4;
                 var swchColor = con.gate == Gate.PNP? nColor : pColor;
                 var conColor = con.gate == Gate.PNP? pColor : nColor;
+                conColor = Color.DIMGRAY;
 
                 var connector = mutNode("connector-" + conCount++);
                 connector.add(Shape.POINT, Label.of(""), swchColor);
@@ -272,13 +277,35 @@ public class WireGraph {
                 )));
 
                 mg.add(connector.addLink(to(nodes[con.swch]).with(
-                    Style.DASHED, swchColor
+//                    Style.BOLD.and(Style.DASHED), swchColor
+                    Style.BOLD, swchColor
                 )));
-
             }
         }
 
         return Graphviz.fromGraph(mg);
+    }
+
+    public String toDataString() {
+        var stream = new ByteArrayOutputStream();
+        var serializer = new AMF3Serializer(stream);
+        try {
+            serializer.writeObject(pinMap);
+            var icons = new int[connections.length][];
+            for (int i = 0; i < connections.length; i++) {
+                icons[i] = new int[connections[i].length * 2];
+                for (int j = 0; j < connections[i].length; j++) {
+                    icons[i][j * 2] = connections[i][j].getConnection();
+                    icons[i][j * 2 + 1] = connections[i][j].getMarkedSwitch();
+                }
+            }
+            serializer.writeObject(icons);
+            return Base64.getMimeEncoder().encodeToString(
+                Util.deflate(stream.toByteArray(), 9)
+            );
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

@@ -9,15 +9,11 @@ public class KohForm {
 
     public KohForm(Path path) throws IOException {
         this.save = KohSave.fromString(Files.readString(path));
-        this.level = Level.getLevel(2);  // TODO
+        this.level = Level.getLevel(1);  // TODO
     }
 
     public static void main(String[] args) throws IOException {
         System.out.println("KohForm");
-
-        byte a = (byte) 255;
-
-        System.out.println(a);
 
         if (args.length == 1) {
             System.out.println("Got argument " + args[0]);
@@ -26,17 +22,26 @@ public class KohForm {
 
             // kf.save.printLayers(false);
 
-            System.out.println("Pins:");
-            var pins = kf.save.getPins();
-            for (int i = 0; i < pins.length; i++) {
-                System.out.println(" " + i + ") " + pins[i]);
-            }
+//            System.out.println("Pins:");
+//            var pins = kf.save.getPins();
+//            for (int i = 0; i < pins.length; i++) {
+//                System.out.println(" " + i + ") " + pins[i]);
+//            }
 //            System.out.println("Pins: " + Arrays.deepToString(kf.save.getPins()));
 
             System.out.println("Creating graph...");
-            var graphviz = WireGraph.fromSave(kf.save).toGraphviz(kf.level);
+            var graph = WireGraph.fromSave(kf.save);
+            int origLen = Files.readString(Paths.get(args[0])).length();
+            String newStr = graph.toDataString();
+            System.out.println(newStr);
+            float ratio = (float) origLen / newStr.length();
+            System.out.printf("%.1fx smaller\n", ratio);
+
+            System.out.println("Converting to graphviz...");
+            var graphviz = graph.toGraphviz(kf.level);
             graphviz.render(Format.PNG).toFile(new File(args[0] + ".png"));
-            System.out.println(graphviz.render(Format.DOT).toString());
+
+//            System.out.println(graphviz.render(Format.DOT).toString());
 //            WireGraph.fromSave(kf.save).prettyPrint(kf.level);
 //            System.out.println(Arrays.deepToString(WireGraph.fromSave(kf.save).getGraph()));
 
