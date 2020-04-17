@@ -35,8 +35,6 @@ public class Wire {
         );
     }
 
-    // TODO: implement equals and hashCode?
-
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;

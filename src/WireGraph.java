@@ -245,8 +245,7 @@ public class WireGraph {
             for (int pin = 0; pin < pm.length; pin++) {
                 if (pm[pin]!= -1 && nodeMap[pm[pin]] != i) pm[pin] = -1;
             }
-            // TODO: ah shit, we cant use same pin map for all b/c then direct
-            //  connections get included in all...
+
             results[i++] = new WireGraph(pm, cons).minimized();
         }
 
