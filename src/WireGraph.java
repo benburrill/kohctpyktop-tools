@@ -7,10 +7,7 @@ import static guru.nidi.graphviz.model.Factory.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 public class WireGraph {
     private byte[] pinMap;
@@ -160,8 +157,8 @@ public class WireGraph {
         for (int i = 0; i < connections.length; i++) {
             System.out.print("Node " + i);
             var pads = padsForNode(level, i);
-            if (pads.length != 0) {
-                System.out.print(" (pads: " + Arrays.toString(pads) + ")");
+            if (pads.size() != 0) {
+                System.out.print(" (pads: " + pads + ")");
             }
 
             System.out.print(" -- ");
@@ -173,7 +170,19 @@ public class WireGraph {
         }
     }
 
-    public IOPad[] padsForNode(Level level, int node) {
+    public LinkedList<Byte> pinNumsForNode(int node) {
+        var result = new LinkedList<Byte>();
+        for (int i = 0; i < pinMap.length; i++) {
+            if (pinMap[i] == node && pinMap[i] >= 0) {
+                result.add((byte) i);
+            }
+        }
+
+        return result;
+    }
+
+    public LinkedList<IOPad> padsForNode(Level level, int node) {
+        // TODO: repeated code...  Do I even really need this method?
         var result = new LinkedList<IOPad>();
         for (int i = 0; i < pinMap.length; i++) {
             if (pinMap[i] == node && pinMap[i] >= 0 && level.getPin(i) != null) {
@@ -181,7 +190,7 @@ public class WireGraph {
             }
         }
 
-        return result.toArray(new IOPad[] {});
+        return result;
     }
 
     public int nodeForPad(IOPad pad) {
@@ -192,48 +201,107 @@ public class WireGraph {
         return connections;
     }
 
-    // It would be cool to have a method to split a disconnected WireGraph into
-    // smaller sub-graphs that are fully connected.
-    public LinkedList<WireGraph> split() {
-        return null; // TODO
-    }
+    public WireGraph[] split() {
+        // Split a graph into distinct unconnected sub-graphs
 
-    // Also maybe a method to minimize a graph only to the nodes that are
-    // actually connected to everything.  Like with split(), we would need to
-    // figure out a way to represent missing pads (or just include nodes for
-    // those pads even if they are unused, but that kinda seems to defeat the
-    // purpose of minimizing or splitting).  So far, I think the best option
-    // would be just to represent them as node 255, or maybe we could use a
-    // HashMap instead of an Array or maybe an array mapping to something other
-    // than indicies (maybe adjacency list or a class to represent nodes).
-    // Oh actually fun fact about that 255 idea is that Java bytes actually are
-    // signed, so we could do -1 in a sensible way.  (Would be equivalent to 255
-    // except byte 255 is actually shown as -1 in Java)
-    public WireGraph minimized() {
-        var pm = this.pinMap.clone();
-        for (int i = 0; i < pm.length; i++) {
-            if (pm[i] == i && connections[i].length == 0) {
-                pm[i] = -1;
+        var min = minimized();
+
+        var nodeMap = new Integer[min.connections.length];
+        var graphs = new LinkedList<Connection[][]>();
+        for (int pinNode : min.pinMap) {
+            if (pinNode < 0 || nodeMap[pinNode] != null) continue;
+            var graphNum = graphs.size();
+            var graph = new Connection[min.connections.length][];
+            for (int i = 0; i < graph.length; i++) graph[i] = new Connection[0];
+            graphs.add(graph);
+
+            var queue = new LinkedList<Integer>();
+            queue.add(pinNode);
+
+            while (!queue.isEmpty()) {
+                int curNode = queue.pop();
+                if (nodeMap[curNode] != null) {
+                    if (nodeMap[curNode] == graphNum) continue;
+                    throw new AssertionError("shouldn't happen");
+                }
+
+                nodeMap[curNode] = graphNum;
+                graph[curNode] = min.connections[curNode];
+
+                for (var con : min.connections[curNode]) {
+                    queue.add(con.getConnection());
+                    // TODO: maybe add option to split along switches?
+                    //  Could represent foreign wires with negative ints?
+                    queue.add(con.getSwitch());
+                }
             }
-            // No this stupid.
-            // pm[pm[i]] = pm[i];
-
-            // Our goal is to avoid nulling out pins that are shorted with
-            // another one.  I don't think we can do like the above though.
-            // Maybe if we did some sort of thing where we iterated backwards?
-
         }
 
-        var gph = new LinkedList<LinkedList<Connection>>();
+        var results = new WireGraph[graphs.size()];
 
-        // TODO: ...
-        return null; // TODO
+        int i = 0;
+        for (var cons : graphs) {
+            var pm = min.pinMap.clone();
+            for (int pin = 0; pin < pm.length; pin++) {
+                if (pm[pin]!= -1 && nodeMap[pm[pin]] != i) pm[pin] = -1;
+            }
+            // TODO: ah shit, we cant use same pin map for all b/c then direct
+            //  connections get included in all...
+            results[i++] = new WireGraph(pm, cons).minimized();
+        }
+
+        return results;
     }
 
-    // TODO: graphviz
-    //  https://github.com/nidi3/graphviz-java (use mutable api probably)
-    //  https://stackoverflow.com/questions/3718025/graphviz-dot-how-to-insert-arrows-from-a-node-to-center-of-an-arrow#4634943
-    //  https://stackoverflow.com/questions/22617837/graphviz-with-combined-edges
+    public WireGraph minimized() {
+        // Minimize a graph, removing extraneous nodes
+        // Pins that are not in graph get represented in the pin map as -1 (255)
+
+        var pm = new byte[pinMap.length];
+        Arrays.fill(pm, (byte) -1);
+
+        var gph = new LinkedList<Connection[]>();
+        var mapping = new int[connections.length];
+        var toAdd = new HashSet<Integer>();
+
+        // Inefficient and inelegant... is there a better way to do all this?
+        for (int i = 0; i < connections.length; i++) {
+            if (pinNumsForNode(i).size() > 1 || connections[i].length > 0) {
+                toAdd.add(i);
+
+                for (var con : connections[i]) {
+                    toAdd.add(con.getSwitch());
+                }
+            }
+        }
+
+        for (int i = 0; i < connections.length; i++) {
+            if (toAdd.contains(i)) {
+                mapping[i] = gph.size();
+                gph.add(connections[i].clone());
+
+                for (var pin : pinNumsForNode(i)) {
+                    pm[pin] = (byte) i;
+                }
+            }
+        }
+
+        for (int i = 0; i < pm.length; i++) {
+            if (pm[i] != -1) pm[i] = (byte) mapping[pm[i]];
+        }
+
+        for (var con : gph) {
+            for (int i = 0; i < con.length; i++) {
+                con[i] = new Connection(
+                    mapping[con[i].getConnection()],
+                    mapping[con[i].getSwitch()],
+                    con[i].getKind()
+                );
+            }
+        }
+
+        return new WireGraph(pm, gph.toArray(new Connection[][] {}));
+    }
 
     public Graphviz toGraphviz(Level level) {
         var mg = mutGraph("Graph").setDirected(false);
@@ -250,7 +318,7 @@ public class WireGraph {
             nodes[i].add(Label.html(label));
 
             // Ensure node added if it has direct connections to multiple pads.
-            if (pads.length > 1) mg.add(nodes[i]);
+            if (pads.size() > 1) mg.add(nodes[i]);
         }
 
         int conCount = 0;
@@ -307,7 +375,4 @@ public class WireGraph {
             throw new RuntimeException(e);
         }
     }
-
-
-    // TODO: serialize
 }

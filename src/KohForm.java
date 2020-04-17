@@ -30,7 +30,16 @@ public class KohForm {
 //            System.out.println("Pins: " + Arrays.deepToString(kf.save.getPins()));
 
             System.out.println("Creating graph...");
-            var graph = WireGraph.fromSave(kf.save);
+            var graph = WireGraph.fromSave(kf.save).minimized();
+            var graphs = graph.split();
+            if (graphs.length != 1) {
+                System.out.println("Can split to " + graphs.length + " graphs");
+                for (int i = 0; i < graphs.length; i++) {
+                    graphs[i].toGraphviz(kf.level).render(Format.PNG).toFile(
+                        new File(args[0] + "-" + i + ".png")
+                    );
+                }
+            }
             int origLen = Files.readString(Paths.get(args[0])).length();
             String newStr = graph.toDataString();
             System.out.println(newStr);
